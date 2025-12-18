@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>이동 경로 표시</title>
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <style>
+    #map { height: 500px; }
+    #distance { margin-top: 10px; font-size: 18px; font-weight: bold; }
+  </style>
+</head>
+<body>
+  <h1>📍 내 위치와 이동 경로</h1>
+  <div id="map"></div>
+  <div id="distance">총 이동 거리: 0 m</div>
+
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <script>
+    // 지도 초기화 (임시 좌표: 서울)
+    const map = L.map('map').setView([37.5665, 126.9780], 13);
+
+    // 지도 타일 불러오기 (OpenStreetMap)
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© OpenStreetMap'
+    }).addTo(map);
+
+    // 경로와 거리 변수
+    let path = [];
+    let totalDistance = 0;
+
+    // 빨간색 polyline 객체 생성
+    const polyline = L.polyline(path, { color: 'red' }).addTo(map);
+
+    // 현재 위치 마커 (하나만 유지)
+    let marker = L.marker([37.5665, 126.9780]).addTo(map).bindPopup("📍 현재 위치");
+
+    // 거리 표시 DOM
+    const distanceDiv = document.getElementById("distance");
+
+    // 위치 추적
+    navigator.geolocation.watchPosition(
+      (pos) => {
+        const { latitude, longitude } = pos.coords;
+        const currentPos = [latitude, longitude];
+
+        // 지도 중심 이동 (줌 유지)
+        map.panTo(currentPos);
+
+        // 마커 위치 갱신
+        marker.setLatLng(currentPos);
+
+        // 경로 배열에 추가
+        if (path.length > 0) {
+          // 이전 좌표와의 거리 계산
+          const prevPos = L.latLng(path[path.length - 1]);
+          const newPos = L.latLng(currentPos);
+          const distance = prevPos.distanceTo(newPos); // 미터 단위
+          totalDistance += distance;
+        }
+        path.push(currentPos);
+
+        // polyline 업데이트
+        polyline.setLatLngs(path);
+
+        // 거리 표시 업데이트 (소수점 버림)
+        distanceDiv.textContent = "총 이동 거리: " + Math.floor(totalDistance) + " m";
+      },
+      (err) => {
+        alert("위치 정보를 가져올 수 없습니다: " + err.message);
+      },
+      { enableHighAccuracy: true }
+    );
+  </script>
+</body>
+</html>
